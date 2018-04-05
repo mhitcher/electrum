@@ -402,6 +402,9 @@ if __name__ == '__main__':
     if config.get('testnet'):
         constants.set_testnet()
 
+    if config.get('simnet'):
+        constants.set_simnet()
+
     # run non-RPC commands separately
     if cmdname in ['create', 'restore']:
         run_non_RPC(config)
