@@ -152,11 +152,15 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
 
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
+        vbox3= QVBoxLayout()
         hbox.addWidget(QLabel(_('Wallet') + ':'))
         self.name_e = QLineEdit()
         hbox.addWidget(self.name_e)
         button = QPushButton(_('Choose...'))
-        hbox.addWidget(button)
+        vbox3.addWidget(button)
+        button2=QPushButton(_('New'))
+        vbox3.addWidget(button2)
+        hbox.addLayout(vbox3)
         vbox.addLayout(hbox)
 
         self.msg_label = QLabel('')
@@ -178,6 +182,15 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
             path, __ = QFileDialog.getOpenFileName(self, "Select your wallet file", wallet_folder)
             if path:
                 self.name_e.setText(path)
+        def on_new_wallet():
+            i=1
+            while True:
+                filename = "wallet_%d" % i
+                if filename in os.listdir(wallet_folder):
+                    i += 1
+                else:
+                   self.name_e.setText(filename)
+                   return
 
         def on_filename(filename):
             path = os.path.join(wallet_folder, filename)
@@ -226,6 +239,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                 self.pw_e.hide()
 
         button.clicked.connect(on_choose)
+        button2.clicked.connect(on_new_wallet)
         self.name_e.textChanged.connect(on_filename)
         n = os.path.basename(self.storage.path)
         self.name_e.setText(n)
