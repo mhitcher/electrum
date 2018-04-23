@@ -342,7 +342,7 @@ class Commands:
 
     @command('')
     def version(self):
-        """Return the version of electrum."""
+        """Return the version of Electrum."""
         from .version import ELECTRUM_VERSION
         return ELECTRUM_VERSION
 
@@ -591,7 +591,7 @@ class Commands:
     @command('w')
     def addrequest(self, amount, memo='', expiration=None, force=False):
         """Create a payment request, using the first unused address of the wallet.
-        The address will be condidered as used after this operation.
+        The address will be considered as used after this operation.
         If no payment is received, the address will be considered as unused if the payment request is deleted from the wallet."""
         addr = self.wallet.get_unused_address()
         if addr is None:
@@ -637,7 +637,7 @@ class Commands:
 
     @command('n')
     def notify(self, address, URL):
-        """Watch an address. Everytime the address changes, a http POST is sent to the URL."""
+        """Watch an address. Every time the address changes, a http POST is sent to the URL."""
         def callback(x):
             import urllib.request
             headers = {'content-type':'application/json'}
@@ -825,7 +825,7 @@ argparse._SubParsersAction.__call__ = subparser_call
 
 
 def add_network_options(parser):
-    parser.add_argument("-1", "--oneserver", action="store_true", dest="oneserver", default=False, help="connect to one server only")
+    parser.add_argument("-1", "--oneserver", action="store_true", dest="oneserver", default=None, help="connect to one server only")
     parser.add_argument("-s", "--server", dest="server", default=None, help="set server host:port:protocol, where protocol is either t (tcp) or s (ssl)")
     parser.add_argument("-p", "--proxy", dest="proxy", default=None, help="set proxy [type:]host[:port], where type is socks4,socks5 or http")
 
@@ -836,6 +836,10 @@ def add_global_options(parser):
     group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum_data' directory")
     group.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
     group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
+<<<<<<< HEAD
+=======
+    group.add_argument("--regtest", action="store_true", dest="regtest", default=False, help="Use Regtest")
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     group.add_argument("--simnet", action="store_true", dest="simnet", default=False, help="Use Simnet")
     group.add_argument("--lightning", action="store_true", dest="lightning", default=False, help="Enable Lightning support via hub")
     group.add_argument("--lnbase", action="store_true", dest="lnbase", default=False, help="Enable Lightning support")

@@ -118,6 +118,24 @@ class BitcoinSimnet:
         'p2wsh':       0x02575483,  # Vpub
     }
 
+class BitcoinSimnet(BitcoinTestnet):
+    ADDRTYPE_P2PKH = 0x3f
+    ADDRTYPE_P2SH = 0x7b
+    SEGWIT_HRP = "sb"
+    GENESIS = "683e86bd5c6d110d91b94b97137ba6bfe02dbbdb8e3dff722a669b5d69d77af6"
+    WIF_PREFIX = 0x00
+    DEFAULT_SERVERS = read_json('servers_regtest.json', {})  # Note: regtest!
+    CHECKPOINTS = []
+
+
+class BitcoinRegtest(BitcoinTestnet):
+
+    SEGWIT_HRP = "bcrt"
+    GENESIS = "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"
+    DEFAULT_SERVERS = read_json('servers_regtest.json', {})
+    CHECKPOINTS = []
+
+
 # don't import net directly, import the module instead (so that net is singleton)
 net = BitcoinMainnet
 
@@ -133,3 +151,8 @@ def set_simnet():
 def set_testnet():
     global net
     net = BitcoinTestnet
+
+
+def set_regtest():
+    global net
+    net = BitcoinRegtest

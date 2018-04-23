@@ -25,6 +25,9 @@ bin/
 # kivy
 gui/kivy/theming/light-0.png
 gui/kivy/theming/light.atlas
+<<<<<<< HEAD
 
 # lightning
 lib/ln/
+=======
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334

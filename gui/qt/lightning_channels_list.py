@@ -13,7 +13,10 @@ datatable = OrderedDict([])
 class MyTableRow(QtWidgets.QTreeWidgetItem):
     def __init__(self, di):
         strs = [str(di[mapping[key]]) for key in range(len(mapping))]
+<<<<<<< HEAD
         print(strs)
+=======
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         super(MyTableRow, self).__init__(strs)
         assert isinstance(di, dict)
         self.di = di
@@ -47,8 +50,13 @@ class LightningChannelsList(QtWidgets.QWidget):
         cur = self._tv.currentItem()
         channel_point = cur["channel_point"]
         def close():
+<<<<<<< HEAD
             params = [str(channel_point)] + (["--force"] if cur["active"] else [])
             lightningCall(lightningRpc, "closechannel")(*params)
+=======
+            params = [str(channel_point)] + (["--force"] if not cur["active"] else []) # TODO test if force is being used correctly
+            lightningCall(self.lightningRpc, "closechannel")(*params)
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         menu.addAction("Close channel", close)
         menu.exec_(self._tv.viewport().mapToGlobal(position))
     def lightningWorkerHandler(self, sourceClassName, obj):
@@ -97,10 +105,18 @@ class LightningChannelsList(QtWidgets.QWidget):
 
         timer = QtCore.QTimer(self)
         timer.timeout.connect(tick)
+<<<<<<< HEAD
         timer.start(20000)
 
         lightningWorker.subscribe(self.lightningWorkerHandler)
         lightningRpc.subscribe(self.lightningRpcHandler)
+=======
+        timer.start(5000)
+
+        lightningWorker.subscribe(self.lightningWorkerHandler)
+        lightningRpc.subscribe(self.lightningRpcHandler)
+        self.lightningRpc = lightningRpc
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 
         self._tv=QtWidgets.QTreeWidget(self)
         self._tv.setHeaderLabels([mapping[i] for i in range(len(mapping))])
@@ -140,6 +156,7 @@ class LightningChannelsList(QtWidgets.QWidget):
 
         self.resize(2500,1000)
 
+<<<<<<< HEAD
 if __name__=="__main__":
     from sys import argv, exit
 
@@ -149,4 +166,72 @@ if __name__=="__main__":
     w.show()
     w.raise_()
 
+=======
+class MockLightningWorker:
+    def subscribe(self, handler):
+        pass
+
+if __name__=="__main__":
+    import queue, threading, asyncio
+    from sys import argv, exit
+    import signal , traceback, os
+
+    loop = asyncio.new_event_loop()
+
+    async def loopstop():
+        loop.stop()
+
+    def signal_handler(signal, frame):
+        asyncio.run_coroutine_threadsafe(loopstop(), loop)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    a=QtWidgets.QApplication(argv)
+
+    gotReplyHandlerLock = threading.Lock()
+    gotReplyHandlerLock.acquire()
+    replyHandler = None
+
+    class MockLightningRPC:
+        def __init__(self, q):
+            self.queue = q
+        def subscribe(self, handler):
+            global replyHandler
+            replyHandler = handler
+            gotReplyHandlerLock.release()
+
+    q = queue.Queue()
+    w=LightningChannelsList(None, MockLightningWorker(), MockLightningRPC(q))
+    w.show()
+    w.raise_()
+
+    async def the_job():
+        try:
+            acquired_once = False
+            while loop.is_running():
+                try:
+                    cmd = q.get_nowait()
+                except queue.Empty:
+                    await asyncio.sleep(1)
+                    continue
+                if not acquired_once:
+                    gotReplyHandlerLock.acquire()
+                    acquired_once = True
+                if cmd[0] == "listchannels":
+                    #replyHandler("listchannels", Exception("Test exception"))
+                    replyHandler("listchannels", {"channels": [{"channel_point": binascii.hexlify(os.urandom(32)).decode("ascii"), "active": True}]})
+                elif cmd[0] == "openchannel":
+                    replyHandler("openchannel", {})
+                else:
+                    print("mock rpc server ignoring", cmd[0])
+        except:
+            traceback.print_exc()
+
+    def asyncioThread():
+        loop.create_task(the_job())
+        loop.run_forever()
+
+    threading.Thread(target=asyncioThread).start()
+
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     exit(a.exec_())

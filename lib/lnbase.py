@@ -25,13 +25,29 @@ import cryptography.hazmat.primitives.ciphers.aead as AEAD
 from .bitcoin import (public_key_from_private_key, ser_to_point, point_to_ser,
                       string_to_number, deserialize_privkey, EC_KEY, rev_hex, int_to_hex,
                       push_script, script_num_to_hex, add_data_to_script,
+<<<<<<< HEAD
                       add_number_to_script)
+=======
+                      add_number_to_script, var_int, witness_push)
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 from . import bitcoin
 from . import constants
 from . import transaction
 from .util import PrintError, bh2u, print_error, bfh, profiler
 from .transaction import opcodes, Transaction
 
+<<<<<<< HEAD
+=======
+from collections import namedtuple
+LocalCtxArgs = namedtuple("LocalCtxArgs",
+            ["ctn",
+            "funding_pubkey", "remote_funding_pubkey", "remotepubkey",
+            "base_point", "remote_payment_basepoint",
+            "remote_revocation_pubkey", "local_delayedpubkey", "to_self_delay",
+            "funding_txid", "funding_index", "funding_satoshis",
+            "local_amount", "remote_amount", "dust_limit_satoshis"])
+
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 # hardcoded nodes
 node_list = [
     ('ecdsa.net', '9735', '038370f0e7a03eded3e1d41dc081084a87f0afa1c5b22090b4f3abb391eb15d8ff'),
@@ -45,6 +61,22 @@ class LightningError(Exception):
 message_types = {}
 
 def handlesingle(x, ma):
+<<<<<<< HEAD
+=======
+    """
+    Evaluate a term of the simple language used
+    to specify lightning message field lengths.
+
+    If `x` is an integer, it is returned as is,
+    otherwise it is treated as a variable and
+    looked up in `ma`.
+
+    It the value in `ma` was no integer, it is
+    assumed big-endian bytes and decoded.
+
+    Returns int
+    """
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     try:
         x = int(x)
     except ValueError:
@@ -56,11 +88,41 @@ def handlesingle(x, ma):
     return x
 
 def calcexp(exp, ma):
+<<<<<<< HEAD
     exp = str(exp)
     assert "*" not in exp
     return sum(handlesingle(x, ma) for x in exp.split("+"))
 
 def make_handler(k, v):
+=======
+    """
+    Evaluate simple mathematical expression given
+    in `exp` with variables assigned in the dict `ma`
+
+    Returns int
+    """
+    exp = str(exp)
+    if "*" in exp:
+      assert "+" not in exp
+      result = 1
+      for term in exp.split("*"):
+        result *= handlesingle(term, ma)
+      return result
+    return sum(handlesingle(x, ma) for x in exp.split("+"))
+
+def make_handler(k, v):
+    """
+    Generate a message handler function (taking bytes)
+    for message type `k` with specification `v`
+
+    Check lib/lightning.json, `k` could be 'init',
+    and `v` could be
+    
+      { type: 16, payload: { 'gflen': ..., ... }, ... }
+    
+    Returns function taking bytes
+    """
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     def handler(data):
         nonlocal k, v
         ma = {}
@@ -84,6 +146,12 @@ with open(path) as f:
 
 for k in structured:
     v = structured[k]
+<<<<<<< HEAD
+=======
+    # these message types are skipped since their types collide
+    # (for example with pong, which also uses type=19)
+    # we don't need them yet
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     if k in ["final_incorrect_cltv_expiry", "final_incorrect_htlc_amount"]:
         continue
     if len(v["payload"]) == 0:
@@ -103,11 +171,27 @@ for k in structured:
 assert message_types[b"\x00\x10"].__name__ == "init_handler"
 
 def decode_msg(data):
+<<<<<<< HEAD
+=======
+    """
+    Decode Lightning message by reading the first
+    two bytes to determine message type.
+
+    Returns message type string and parsed message contents dict
+    """
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     typ = data[:2]
     k, parsed = message_types[typ](data[2:])
     return k, parsed
 
 def gen_msg(msg_type, **kwargs):
+<<<<<<< HEAD
+=======
+    """
+    Encode kwargs into a Lightning message (bytes)
+    of the type given in the msg_type string
+    """
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     typ = structured[msg_type]
     data = int(typ["type"]).to_bytes(byteorder="big", length=2)
     lengths = {}
@@ -273,6 +357,21 @@ def derive_blinded_pubkey(basepoint, per_commitment_point):
     k2 = ser_to_point(per_commitment_point) * bitcoin.string_to_number(bitcoin.sha256(per_commitment_point + basepoint))
     return point_to_ser(k1 + k2)
 
+<<<<<<< HEAD
+=======
+
+def get_per_commitment_secret_from_seed(seed: bytes, i: int, bits: int = 47) -> bytes:
+    """Generate per commitment secret."""
+    per_commitment_secret = bytearray(seed)
+    for bitindex in range(bits, -1, -1):
+        mask = 1 << bitindex
+        if i & mask:
+            per_commitment_secret[bitindex // 8] ^= 1 << (bitindex % 8)
+            per_commitment_secret = bytearray(bitcoin.sha256(per_commitment_secret))
+    return bytes(per_commitment_secret)
+
+
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 def overall_weight(num_htlc):
     return 500 + 172 * num_htlc + 224
 
@@ -298,6 +397,7 @@ def make_htlc_tx_output(amount_msat, local_feerate, revocationpubkey, local_dela
     output = (bitcoin.TYPE_ADDRESS, p2wsh, amount_msat // 1000 - fee)
     return output
 
+<<<<<<< HEAD
 def make_htlc_tx_inputs(htlc_output_txid, htlc_output_index, remotehtlcsig, localhtlcsig, payment_preimage, revocationpubkey, local_delayedpubkey, amount_msat):
     assert type(htlc_output_txid) is str
     assert type(htlc_output_index) is int
@@ -312,11 +412,37 @@ def make_htlc_tx_inputs(htlc_output_txid, htlc_output_index, remotehtlcsig, loca
         'x_pubkeys': [bh2u(x) for x in [revocationpubkey, local_delayedpubkey]],
         'signatures': [bh2u(x) for x in [remotehtlcsig, localhtlcsig, payment_preimage]],
         'num_sig': 3,
+=======
+def make_htlc_tx_witness(remotehtlcsig, localhtlcsig, payment_preimage, witness_script):
+    assert type(remotehtlcsig) is bytes
+    assert type(localhtlcsig) is bytes
+    assert type(payment_preimage) is bytes
+    assert type(witness_script) is bytes
+    return bfh(var_int(5) + '00' + ''.join([witness_push(bh2u(x)) for x in [remotehtlcsig, localhtlcsig, payment_preimage, witness_script]]))
+
+def make_htlc_tx_inputs(htlc_output_txid, htlc_output_index, revocationpubkey, local_delayedpubkey, amount_msat, witness_script):
+    assert type(htlc_output_txid) is str
+    assert type(htlc_output_index) is int
+    assert type(revocationpubkey) is bytes
+    assert type(local_delayedpubkey) is bytes
+    assert type(amount_msat) is int
+    assert type(witness_script) is str
+    c_inputs = [{
+        'scriptSig': '',
+        'type': 'p2wsh',
+        'signatures': [],
+        'num_sig': 0,
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         'prevout_n': htlc_output_index,
         'prevout_hash': htlc_output_txid,
         'value': amount_msat // 1000,
         'coinbase': False,
+<<<<<<< HEAD
         'sequence': 0x0
+=======
+        'sequence': 0x0,
+        'preimage_script': witness_script,
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     }]
     return c_inputs
 
@@ -366,9 +492,16 @@ def make_received_htlc(revocation_pubkey, remote_htlcpubkey, local_htlcpubkey, p
 
 
 def make_commitment(ctn, local_funding_pubkey, remote_funding_pubkey, remotepubkey,
+<<<<<<< HEAD
                     payment_basepoint, remote_payment_basepoint, revocation_pubkey, delayed_pubkey,
                     funding_txid, funding_pos, funding_satoshis,
                     to_local_msat, to_remote_msat, local_feerate, local_delay, htlcs=[]):
+=======
+                    payment_basepoint, remote_payment_basepoint,
+                    revocation_pubkey, delayed_pubkey, to_self_delay,
+                    funding_txid, funding_pos, funding_satoshis,
+                    local_amount, remote_amount, dust_limit_satoshis, htlcs=[]):
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     pubkeys = sorted([bh2u(local_funding_pubkey), bh2u(remote_funding_pubkey)])
     obs = get_obscured_ctn(ctn, payment_basepoint, remote_payment_basepoint)
     locktime = (0x20 << 24) + (obs & 0xffffff)
@@ -387,6 +520,7 @@ def make_commitment(ctn, local_funding_pubkey, remote_funding_pubkey, remotepubk
         'sequence':sequence
     }]
     # commitment tx outputs
+<<<<<<< HEAD
     local_script = bytes([opcodes.OP_IF]) + bfh(push_script(bh2u(revocation_pubkey))) + bytes([opcodes.OP_ELSE]) + add_number_to_script(local_delay) \
                    + bytes([opcodes.OP_CSV, opcodes.OP_DROP]) + bfh(push_script(bh2u(delayed_pubkey))) + bytes([opcodes.OP_ENDIF, opcodes.OP_CHECKSIG])
     local_address = bitcoin.redeem_script_to_address('p2wsh', bh2u(local_script))
@@ -394,11 +528,22 @@ def make_commitment(ctn, local_funding_pubkey, remote_funding_pubkey, remotepubk
     local_amount = to_local_msat // 1000 - fee
     remote_address = bitcoin.pubkey_to_address('p2wpkh', bh2u(remotepubkey))
     remote_amount = to_remote_msat // 1000
+=======
+    local_script = bytes([opcodes.OP_IF]) + bfh(push_script(bh2u(revocation_pubkey))) + bytes([opcodes.OP_ELSE]) + add_number_to_script(to_self_delay) \
+                   + bytes([opcodes.OP_CSV, opcodes.OP_DROP]) + bfh(push_script(bh2u(delayed_pubkey))) + bytes([opcodes.OP_ENDIF, opcodes.OP_CHECKSIG])
+    local_address = bitcoin.redeem_script_to_address('p2wsh', bh2u(local_script))
+    remote_address = bitcoin.pubkey_to_address('p2wpkh', bh2u(remotepubkey))
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     to_local = (bitcoin.TYPE_ADDRESS, local_address, local_amount)
     to_remote = (bitcoin.TYPE_ADDRESS, remote_address, remote_amount)
     c_outputs = [to_local, to_remote]
     for script, msat_amount in htlcs:
         c_outputs += [(bitcoin.TYPE_ADDRESS, bitcoin.redeem_script_to_address('p2wsh', bh2u(script)), msat_amount // 1000)]
+<<<<<<< HEAD
+=======
+    # trim outputs
+    c_outputs = list(filter(lambda x:x[2]>= dust_limit_satoshis, c_outputs))
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     # create commitment tx
     tx = Transaction.from_io(c_inputs, c_outputs, locktime=locktime, version=2)
     tx.BIP_LI01_sort()
@@ -406,23 +551,49 @@ def make_commitment(ctn, local_funding_pubkey, remote_funding_pubkey, remotepubk
 
 class Peer(PrintError):
 
+<<<<<<< HEAD
     def __init__(self, host, port, pubkey, request_initial_sync=True):
+=======
+    def __init__(self, host, port, pubkey, request_initial_sync=False, network=None):
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         self.host = host
         self.port = port
         self.privkey = os.urandom(32) + b"\x01"
         self.pubkey = pubkey
+<<<<<<< HEAD
         self.read_buffer = b''
         self.ping_time = 0
         self.channel_accepted = {}
         self.funding_signed = {}
+=======
+        self.network = network
+        self.read_buffer = b''
+        self.ping_time = 0
+        self.futures = ["channel_accepted",
+            "funding_signed",
+            "local_funding_locked",
+            "remote_funding_locked",
+            "commitment_signed"]
+        self.channel_accepted = {}
+        self.funding_signed = {}
+        self.local_funding_locked = {}
+        self.remote_funding_locked = {}
+        self.commitment_signed = {}
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         self.initialized = asyncio.Future()
         self.localfeatures = (0x08 if request_initial_sync else 0)
         # view of the network
         self.nodes = {} # received node announcements
+<<<<<<< HEAD
         self.channels = {} # received channel announcements
         self.channel_u_origin = {}
         self.channel_u_final = {}
         self.graph_of_payment_channels = defaultdict(set)  # node -> short_channel_id
+=======
+        self.channel_db = ChannelDB()
+        self.path_finder = LNPathFinder(self.channel_db)
+        self.unfulfilled_htlcs = []
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 
     def diagnostic_name(self):
         return self.host
@@ -526,10 +697,18 @@ class Peer(PrintError):
         f(payload)
 
     def on_error(self, payload):
+<<<<<<< HEAD
         if payload["channel_id"] in self.channel_accepted:
             self.channel_accepted[payload["channel_id"]].set_exception(LightningError(payload["data"]))
         if payload["channel_id"] in self.funding_signed:
             self.funding_signed[payload["channel_id"]].set_exception(LightningError(payload["data"]))
+=======
+        for i in self.futures:
+            if payload["channel_id"] in getattr(self, i):
+                getattr(self, i)[payload["channel_id"]].set_exception(LightningError(payload["data"]))
+                return
+        self.print_error("no future found to resolve", payload)
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 
     def on_ping(self, payload):
         l = int.from_bytes(payload['num_pong_bytes'], byteorder="big")
@@ -539,6 +718,7 @@ class Peer(PrintError):
         self.channel_accepted[payload["temporary_channel_id"]].set_result(payload)
 
     def on_funding_signed(self, payload):
+<<<<<<< HEAD
         sig = payload['signature']
         channel_id = payload['channel_id']
         tx = self.channels[channel_id]
@@ -549,6 +729,14 @@ class Peer(PrintError):
 
     def on_funding_locked(self, payload):
         pass
+=======
+        channel_id = int.from_bytes(payload['channel_id'], byteorder="big")
+        self.funding_signed[channel_id].set_result(payload)
+
+    def on_funding_locked(self, payload):
+        channel_id = int.from_bytes(payload['channel_id'], byteorder="big")
+        self.remote_funding_locked[channel_id].set_result(payload)
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 
     def on_node_announcement(self, payload):
         pubkey = payload['node_id']
@@ -588,6 +776,7 @@ class Peer(PrintError):
         pass
 
     def on_channel_update(self, payload):
+<<<<<<< HEAD
         flags = int.from_bytes(payload['flags'], byteorder="big")
         direction = bool(flags & 1)
         short_channel_id = payload['short_channel_id']
@@ -609,10 +798,17 @@ class Peer(PrintError):
         channel_id = payload['short_channel_id']
         self.graph_of_payment_channels[node1].add(channel_id)
         self.graph_of_payment_channels[node2].add(channel_id)
+=======
+        self.channel_db.on_channel_update(payload)
+
+    def on_channel_announcement(self, payload):
+        self.channel_db.on_channel_announcement(payload)
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 
     #def open_channel(self, funding_sat, push_msat):
     #    self.send_message(gen_msg('open_channel', funding_satoshis=funding_sat, push_msat=push_msat))
 
+<<<<<<< HEAD
     @profiler
     def find_route_for_payment(self, from_node_id, to_node_id, amount_msat=None):
         """Return a route between from_node_id and to_node_id.
@@ -681,6 +877,8 @@ class Peer(PrintError):
         path.reverse()
         return path
 
+=======
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
     @aiosafe
     async def main_loop(self):
         self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
@@ -702,7 +900,11 @@ class Peer(PrintError):
         self.writer.close()
 
     @aiosafe
+<<<<<<< HEAD
     async def channel_establishment_flow(self, wallet, config):
+=======
+    async def channel_establishment_flow(self, wallet, config, funding_satoshis, push_msat):
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         await self.initialized
         temp_channel_id = os.urandom(32)
         keys = get_unused_keys()
@@ -710,23 +912,52 @@ class Peer(PrintError):
         revocation_basepoint, revocation_privkey = next(keys)
         htlc_basepoint, htlc_privkey = next(keys)
         delayed_payment_basepoint, delayed_privkey = next(keys)
+<<<<<<< HEAD
         funding_satoshis = 20000
         base_secret = 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
         per_commitment_secret = 0x1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100
         base_point = secret_to_pubkey(base_secret)
         per_commitment_point = secret_to_pubkey(per_commitment_secret)
+=======
+        base_secret = 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+        per_commitment_secret_seed = 0x1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100.to_bytes(length=32, byteorder="big")
+        per_commitment_secret_index = 2**48 - 1
+        # amounts
+        local_feerate = 20000
+        dust_limit_satoshis = 10
+        to_self_delay = 144
+        ctn = 0
+        #
+        base_point = secret_to_pubkey(base_secret)
+        per_commitment_secret_first = get_per_commitment_secret_from_seed(per_commitment_secret_seed, per_commitment_secret_index)
+        per_commitment_point_first = secret_to_pubkey(int.from_bytes(
+            per_commitment_secret_first,
+            byteorder="big"))
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         msg = gen_msg(
             "open_channel",
             temporary_channel_id=temp_channel_id,
             chain_hash=bytes.fromhex(rev_hex(constants.net.GENESIS)),
             funding_satoshis=funding_satoshis,
+<<<<<<< HEAD
+=======
+            push_msat=push_msat,
+            dust_limit_satoshis=dust_limit_satoshis,
+            feerate_per_kw=local_feerate,
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
             max_accepted_htlcs=5,
             funding_pubkey=funding_pubkey,
             revocation_basepoint=revocation_basepoint,
             htlc_basepoint=htlc_basepoint,
             payment_basepoint=base_point,
             delayed_payment_basepoint=delayed_payment_basepoint,
+<<<<<<< HEAD
             first_per_commitment_point=per_commitment_point
+=======
+            first_per_commitment_point=per_commitment_point_first,
+            to_self_delay=to_self_delay,
+            max_htlc_value_in_flight_msat=10_000
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         )
         self.channel_accepted[temp_channel_id] = asyncio.Future()
         self.send_message(msg)
@@ -736,11 +967,25 @@ class Peer(PrintError):
             del self.channel_accepted[temp_channel_id]
         remote_per_commitment_point = payload['first_per_commitment_point']
         remote_funding_pubkey = payload["funding_pubkey"]
+<<<<<<< HEAD
+=======
+        remote_delay = int.from_bytes(payload['to_self_delay'], byteorder="big")
+        remote_dust_limit_satoshis = int.from_bytes(payload['dust_limit_satoshis'], byteorder="big")
+        remote_revocation_basepoint = payload['revocation_basepoint']
+        remote_payment_basepoint = payload['payment_basepoint']
+        remote_delayed_payment_basepoint = payload['delayed_payment_basepoint']
+        funding_txn_minimum_depth = int.from_bytes(payload['minimum_depth'], byteorder="big")
+        self.print_error('remote dust limit', remote_dust_limit_satoshis)
+        self.print_error('remote delay', remote_delay)
+        self.print_error('funding_txn_minimum_depth', funding_txn_minimum_depth)
+        # create funding tx
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
         pubkeys = sorted([bh2u(funding_pubkey), bh2u(remote_funding_pubkey)])
         redeem_script = transaction.multisig_script(pubkeys, 2)
         funding_address = bitcoin.redeem_script_to_address('p2wsh', redeem_script)
         funding_output = (bitcoin.TYPE_ADDRESS, funding_address, funding_satoshis)
         funding_tx = wallet.mktx([funding_output], None, config, 1000)
+<<<<<<< HEAD
         funding_index = funding_tx.outputs().index(funding_output)
         remote_payment_basepoint = payload['payment_basepoint']
         localpubkey = derive_pubkey(base_point, per_commitment_point)
@@ -774,6 +1019,134 @@ class Peer(PrintError):
             funding_signed = await self.funding_signed[temp_channel_id]
         finally:
             del self.funding_signed[temp_channel_id]
+=======
+        funding_txid = funding_tx.txid()
+        funding_index = funding_tx.outputs().index(funding_output)
+        # derive keys
+        localpubkey = derive_pubkey(base_point, remote_per_commitment_point)
+        localprivkey = derive_privkey(base_secret, remote_per_commitment_point)
+        remotepubkey = derive_pubkey(remote_payment_basepoint, per_commitment_point_first)
+        revocation_pubkey = derive_blinded_pubkey(revocation_basepoint, remote_per_commitment_point)
+        remote_revocation_pubkey = derive_blinded_pubkey(remote_revocation_basepoint, per_commitment_point_first)
+        local_delayedpubkey = derive_pubkey(delayed_payment_basepoint, per_commitment_point_first)
+        remote_delayedpubkey = derive_pubkey(remote_delayed_payment_basepoint, remote_per_commitment_point)
+        # compute amounts
+        htlcs = []
+        fee = local_feerate * overall_weight(len(htlcs)) // 1000
+        to_local_msat = funding_satoshis*1000 - push_msat
+        to_remote_msat = push_msat
+        local_amount = to_local_msat // 1000 - fee
+        remote_amount = to_remote_msat // 1000
+        # remote commitment transaction
+        remote_ctx = make_commitment(
+            ctn,
+            remote_funding_pubkey, funding_pubkey, localpubkey,
+            base_point, remote_payment_basepoint,
+            revocation_pubkey, remote_delayedpubkey, remote_delay,
+            funding_txid, funding_index, funding_satoshis,
+            remote_amount, local_amount, remote_dust_limit_satoshis)
+        remote_ctx.sign({bh2u(funding_pubkey): (funding_privkey, True)})
+        sig_index = pubkeys.index(bh2u(funding_pubkey))
+        sig = bytes.fromhex(remote_ctx.inputs()[0]["signatures"][sig_index])
+        r, s = sigdecode_der(sig[:-1], SECP256k1.generator.order())
+        sig_64 = sigencode_string_canonize(r, s, SECP256k1.generator.order())
+        funding_txid_bytes = bytes.fromhex(funding_txid)[::-1]
+        channel_id = int.from_bytes(funding_txid_bytes, byteorder="big") ^ funding_index
+        self.send_message(gen_msg("funding_created", temporary_channel_id=temp_channel_id, funding_txid=funding_txid_bytes, funding_output_index=funding_index, signature=sig_64))
+        self.funding_signed[channel_id] = asyncio.Future()
+        try:
+            payload = await self.funding_signed[channel_id]
+        finally:
+            del self.funding_signed[channel_id]
+        self.print_error('received funding_signed')
+        remote_sig = payload['signature']
+        # verify remote signature
+        local_ctx_args = LocalCtxArgs(
+            ctn,
+            funding_pubkey, remote_funding_pubkey, remotepubkey,
+            base_point, remote_payment_basepoint,
+            remote_revocation_pubkey, local_delayedpubkey, to_self_delay,
+            funding_txid, funding_index, funding_satoshis,
+            local_amount, remote_amount, dust_limit_satoshis)
+        local_ctx = make_commitment(*local_ctx_args)
+        pre_hash = bitcoin.Hash(bfh(local_ctx.serialize_preimage(0)))
+        if not bitcoin.verify_signature(remote_funding_pubkey, remote_sig, pre_hash):
+            raise Exception('verifying remote signature failed.')
+        # broadcast funding tx
+        self.local_funding_locked[channel_id] = asyncio.Future()
+        self.remote_funding_locked[channel_id] = asyncio.Future()
+        success, _txid = self.network.broadcast(funding_tx)
+        assert success, success
+        # wait until we see confirmations
+        def on_network_update(event, *args):
+            conf = wallet.get_tx_height(funding_txid)[1]
+            if conf >= funding_txn_minimum_depth:
+                async def set_local_funding_locked_result():
+                    try:
+                        self.local_funding_locked[channel_id].set_result(1)
+                    except (asyncio.InvalidStateError, KeyError) as e:
+                        # FIXME race condition if updates come in quickly, set_result might be called multiple times
+                        # or self.local_funding_locked[channel_id] might be deleted already
+                        self.print_error('local_funding_locked.set_result error for channel {}: {}'.format(channel_id, e))
+                asyncio.run_coroutine_threadsafe(set_local_funding_locked_result(), asyncio.get_event_loop())
+                self.network.unregister_callback(on_network_update)
+        self.network.register_callback(on_network_update, ['updated']) # thread safe
+
+        try:
+            await self.local_funding_locked[channel_id]
+        finally:
+            del self.local_funding_locked[channel_id]
+        per_commitment_secret_index -= 1
+        per_commitment_point_second = secret_to_pubkey(int.from_bytes(
+            get_per_commitment_secret_from_seed(per_commitment_secret_seed, per_commitment_secret_index),
+            byteorder="big"))
+        self.send_message(gen_msg("funding_locked", channel_id=channel_id, next_per_commitment_point=per_commitment_point_second))
+        # wait until we receive funding_locked
+        try:
+            payload = await self.remote_funding_locked[channel_id]
+        finally:
+            del self.remote_funding_locked[channel_id]
+        self.print_error('Done waiting for remote_funding_locked', payload)
+        self.commitment_signed[channel_id] = asyncio.Future()
+        return channel_id, per_commitment_secret_seed, local_ctx_args, remote_funding_pubkey
+    async def receive_commitment_revoke_ack(self, channel_id, per_commitment_secret_seed, last_pcs_index, local_ctx_args, expected_received_sat, remote_funding_pubkey, next_commitment_number):
+        try:
+            commitment_signed_msg = await self.commitment_signed[channel_id]
+        finally:
+            del self.commitment_signed[channel_id]
+            # TODO make new future? (there could be more updates)
+
+        local_ctx_args = local_ctx_args._replace(local_amount = local_ctx_args.local_amount + expected_received_sat)
+        local_ctx_args = local_ctx_args._replace(remote_amount = local_ctx_args.remote_amount - expected_received_sat)
+        local_ctx_args = local_ctx_args._replace(ctn = next_commitment_number)
+        new_commitment = make_commitment(*local_ctx_args)
+        pre_hash = bitcoin.Hash(bfh(new_commitment.serialize_preimage(0)))
+        if not bitcoin.verify_signature(remote_funding_pubkey, commitment_signed_msg["signature"], pre_hash):
+            raise Exception('failed verifying signature of updated commitment transaction')
+
+        last_per_commitment_secret = get_per_commitment_secret_from_seed(per_commitment_secret_seed, last_pcs_index)
+
+        next_per_commitment_secret = get_per_commitment_secret_from_seed(per_commitment_secret_seed, last_pcs_index - 1)
+        next_per_commitment_point = secret_to_pubkey(int.from_bytes(
+            next_per_commitment_secret,
+            byteorder="big"))
+
+        self.send_message(gen_msg("revoke_and_ack", channel_id=channel_id, per_commitment_secret=last_per_commitment_secret, next_per_commitment_point=next_per_commitment_point))
+
+    async def fulfill_htlc(self, channel_id, htlc_id, payment_preimage):
+        self.send_message(gen_msg("update_fulfill_htlc", channel_id=channel_id, id=htlc_id, payment_preimage=payment_preimage))
+
+    def on_commitment_signed(self, payload):
+        channel_id = int.from_bytes(payload['channel_id'], byteorder="big")
+        self.commitment_signed[channel_id].set_result(payload)
+
+    def on_update_add_htlc(self, payload):
+        # no onion routing for the moment: we assume we are the end node
+        self.print_error('on_update_add_htlc', payload)
+        assert self.unfulfilled_htlcs == []
+        self.unfulfilled_htlcs.append(payload)
+
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
 
 
 # replacement for lightningCall
@@ -792,3 +1165,173 @@ class LNWorker:
         # todo: get utxo from wallet
         # submit coro to asyncio main loop
         self.peer.open_channel()
+<<<<<<< HEAD
+=======
+
+
+class ChannelInfo(PrintError):
+
+    def __init__(self, channel_announcement_payload):
+        self.channel_id = channel_announcement_payload['short_channel_id']
+        self.node_id_1 = channel_announcement_payload['node_id_1']
+        self.node_id_2 = channel_announcement_payload['node_id_2']
+
+        self.capacity_sat = None
+        self.policy_node1 = None
+        self.policy_node2 = None
+
+    def set_capacity(self, capacity):
+        # TODO call this after looking up UTXO for funding txn on chain
+        self.capacity_sat = capacity
+
+    def on_channel_update(self, msg_payload):
+        assert self.channel_id == msg_payload['short_channel_id']
+        flags = int.from_bytes(msg_payload['flags'], byteorder="big")
+        direction = bool(flags & 1)
+        if direction == 0:
+            self.policy_node1 = ChannelInfoDirectedPolicy(msg_payload)
+        else:
+            self.policy_node2 = ChannelInfoDirectedPolicy(msg_payload)
+        self.print_error('channel update', binascii.hexlify(self.channel_id), flags)
+
+    def get_policy_for_node(self, node_id):
+        if node_id == self.node_id_1:
+            return self.policy_node1
+        elif node_id == self.node_id_2:
+            return self.policy_node2
+        else:
+            raise Exception('node_id {} not in channel {}'.format(node_id, self.channel_id))
+
+
+class ChannelInfoDirectedPolicy:
+
+    def __init__(self, channel_update_payload):
+        self.cltv_expiry_delta           = channel_update_payload['cltv_expiry_delta']
+        self.htlc_minimum_msat           = channel_update_payload['htlc_minimum_msat']
+        self.fee_base_msat               = channel_update_payload['fee_base_msat']
+        self.fee_proportional_millionths = channel_update_payload['fee_proportional_millionths']
+
+
+class ChannelDB(PrintError):
+
+    def __init__(self):
+        self._id_to_channel_info = {}
+        self._channels_for_node = defaultdict(set)  # node -> set(short_channel_id)
+
+    def get_channel_info(self, channel_id):
+        return self._id_to_channel_info.get(channel_id, None)
+
+    def get_channels_for_node(self, node_id):
+        """Returns the set of channels that have node_id as one of the endpoints."""
+        return self._channels_for_node[node_id]
+
+    def on_channel_announcement(self, msg_payload):
+        short_channel_id = msg_payload['short_channel_id']
+        self.print_error('channel announcement', binascii.hexlify(short_channel_id))
+        channel_info = ChannelInfo(msg_payload)
+        self._id_to_channel_info[short_channel_id] = channel_info
+        self._channels_for_node[channel_info.node_id_1].add(short_channel_id)
+        self._channels_for_node[channel_info.node_id_2].add(short_channel_id)
+
+    def on_channel_update(self, msg_payload):
+        short_channel_id = msg_payload['short_channel_id']
+        try:
+            channel_info = self._id_to_channel_info[short_channel_id]
+        except KeyError:
+            pass  # ignore channel update
+        else:
+            channel_info.on_channel_update(msg_payload)
+
+    def remove_channel(self, short_channel_id):
+        try:
+            channel_info = self._id_to_channel_info[short_channel_id]
+        except KeyError:
+            self.print_error('cannot find channel {}'.format(short_channel_id))
+            return
+        self._id_to_channel_info.pop(short_channel_id, None)
+        for node in (channel_info.node_id_1, channel_info.node_id_2):
+            try:
+                self._channels_for_node[node].remove(short_channel_id)
+            except KeyError:
+                pass
+
+
+class LNPathFinder(PrintError):
+
+    def __init__(self, channel_db):
+        self.channel_db = channel_db
+
+    def _edge_cost(self, short_channel_id, start_node, payment_amt_msat):
+        """Heuristic cost of going through a channel.
+        direction: 0 or 1. --- 0 means node_id_1 -> node_id_2
+        """
+        channel_info = self.channel_db.get_channel_info(short_channel_id)
+        if channel_info is None:
+            return float('inf')
+
+        channel_policy = channel_info.get_policy_for_node(start_node)
+        cltv_expiry_delta           = channel_policy.cltv_expiry_delta
+        htlc_minimum_msat           = channel_policy.htlc_minimum_msat
+        fee_base_msat               = channel_policy.fee_base_msat
+        fee_proportional_millionths = channel_policy.fee_proportional_millionths
+        if payment_amt_msat is not None:
+            if payment_amt_msat < htlc_minimum_msat:
+                return float('inf')  # payment amount too little
+            if channel_info.capacity_sat is not None and \
+                    payment_amt_msat // 1000 > channel_info.capacity_sat:
+                return float('inf')  # payment amount too large
+        amt = payment_amt_msat or 50000 * 1000  # guess for typical payment amount
+        fee_msat = fee_base_msat + amt * fee_proportional_millionths / 1000000
+        # TODO revise
+        # paying 10 more satoshis ~ waiting one more block
+        fee_cost = fee_msat / 1000 / 10
+        cltv_cost = cltv_expiry_delta
+        return cltv_cost + fee_cost + 1
+
+    @profiler
+    def find_path_for_payment(self, from_node_id, to_node_id, amount_msat=None):
+        """Return a path between from_node_id and to_node_id.
+
+        Returns a list of (node_id, short_channel_id) representing a path.
+        To get from node ret[n][0] to ret[n+1][0], use channel ret[n][1]
+        """
+        # TODO find multiple paths??
+
+        # run Dijkstra
+        distance_from_start = defaultdict(lambda: float('inf'))
+        distance_from_start[from_node_id] = 0
+        prev_node = {}
+        nodes_to_explore = queue.PriorityQueue()
+        nodes_to_explore.put((0, from_node_id))
+
+        while nodes_to_explore.qsize() > 0:
+            dist_to_cur_node, cur_node = nodes_to_explore.get()
+            if cur_node == to_node_id:
+                break
+            if dist_to_cur_node != distance_from_start[cur_node]:
+                # queue.PriorityQueue does not implement decrease_priority,
+                # so instead of decreasing priorities, we add items again into the queue.
+                # so there are duplicates in the queue, that we discard now:
+                continue
+            for edge_channel_id in self.channel_db.get_channels_for_node(cur_node):
+                channel_info = self.channel_db.get_channel_info(edge_channel_id)
+                node1, node2 = channel_info.node_id_1, channel_info.node_id_2
+                neighbour = node2 if node1 == cur_node else node1
+                alt_dist_to_neighbour = distance_from_start[cur_node] \
+                                        + self._edge_cost(edge_channel_id, cur_node, amount_msat)
+                if alt_dist_to_neighbour < distance_from_start[neighbour]:
+                    distance_from_start[neighbour] = alt_dist_to_neighbour
+                    prev_node[neighbour] = cur_node, edge_channel_id
+                    nodes_to_explore.put((alt_dist_to_neighbour, neighbour))
+        else:
+            return None  # no path found
+
+        # backtrack from end to start
+        cur_node = to_node_id
+        path = [(cur_node, None)]
+        while cur_node != from_node_id:
+            cur_node, edge_taken = prev_node[cur_node]
+            path += [(cur_node, edge_taken)]
+        path.reverse()
+        return path
+>>>>>>> 0ca3e7a4491dcbe91a487c9da0e3255914313334
